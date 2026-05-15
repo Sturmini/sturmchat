@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Modern Chat App</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+}
+
+/* LOGIN SCREEN */
+#login {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card {
+    background: #111827;
+    padding: 20px;
+    border-radius: 12px;
+    width: 300px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 8px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+}
+
+/* CHAT SCREEN */
+#chat {
+    display: none;
+    height: 100vh;
+    flex-direction: column;
+}
+
+#messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.msg {
+    background: #1f2937;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 60%;
+}
+
+#inputArea {
+    display: flex;
+    padding: 10px;
+    background: #111827;
+}
+
+#input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+}
+
+#sendBtn {
+    margin-left: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+    <div class="card">
+        <h3>Login / Sign Up</h3>
+
+        <input id="username" placeholder="Username">
+        <input id="password" type="password" placeholder="Password">
+
+        <button onclick="signup()">Sign Up</button>
+        <button onclick="login()">Login</button>
+
+        <p id="status"></p>
+    </div>
+</div>
+
+<!-- CHAT -->
+<div id="chat">
+    <div id="messages"></div>
+
+    <div id="inputArea">
+        <input id="input" placeholder="Type a message..." />
+        <button id="sendBtn" onclick="send()">Send</button>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+const loginScreen = document.getElementById("login");
+const chatScreen = document.getElementById("chat");
+const messages = document.getElementById("messages");
+const input = document.getElementById("input");
+
+// SIGN UP
+function signup() {
+    socket.emit("signup", {
+        username: username.value,
+        password: password.value
+    }, (res) => {
+        document.getElementById("status").innerText = res.message;
+    });
+}
+
+// LOGIN
+function login() {
+    socket.emit("login", {
+        username: username.value,
+        password: password.value
+    }, (res) => {
+        if (res.success) {
+            loginScreen.style.display = "none";
+            chatScreen.style.display = "flex";
+        } else {
+            document.getElementById("status").innerText = res.message;
+        }
+    });
+}
+
+// SEND MESSAGE
+function send() {
+    if (input.value.trim() === "") return;
+
+    socket.emit("chat message", input.value);
+    input.value = "";
+}
+
+// ENTER KEY SUPPORT
+input?.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") send();
+});
+
+// RECEIVE MESSAGE
+socket.on("chat message", (data) => {
+    const div = document.createElement("div");
+    div.className = "msg";
+
+    div.innerHTML = `
+        <b>${data.user}</b> <small>${data.time}</small><br>
+        ${data.text}
+    `;
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+});
+</script>
+
+</body>
+</html>
